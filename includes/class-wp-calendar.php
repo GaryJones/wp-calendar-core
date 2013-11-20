@@ -10,6 +10,10 @@
  */
 
 /**
+ * Base class for calnder representations.
+ *
+ * @since 0.1.0
+ *
  * @package WP_Calendar_Core
  * @author  Gary Jones <gary@garyjones.co.uk>
  */
@@ -110,7 +114,7 @@ class WP_Calendar {
 			$this->build_table_head() .
 			$this->build_table_foot() .
 			$this->build_table_body() .
-		'</table>';
+			'</table>';
 	}
 
 	protected function build_table_caption() {
@@ -158,11 +162,11 @@ class WP_Calendar {
 	 *
 	 * @since 0.1.0
 	 *
-	 * @param  string $direction 'previous' or 'next'.
+	 * @param string  $direction 'previous' or 'next'.
 	 *
 	 * @return string Markup for single cell, containing space or link.
 	 */
-	protected function build_table_foot_nav ( $direction ) {
+	protected function build_table_foot_nav( $direction ) {
 		global $wp_locale;
 
 		// If no value exists for the direction, return single-space table cell
@@ -288,9 +292,9 @@ class WP_Calendar {
 
 	protected function get_title_separator() {
 		// Apparently these browsers can do multi-line title tooltips...
-		if (strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false ||
-			stripos($_SERVER['HTTP_USER_AGENT'], 'camino') !== false ||
-			stripos($_SERVER['HTTP_USER_AGENT'], 'safari') !== false) {
+		if ( strpos( $_SERVER['HTTP_USER_AGENT'], 'MSIE' ) !== false ||
+			stripos( $_SERVER['HTTP_USER_AGENT'], 'camino' ) !== false ||
+			stripos( $_SERVER['HTTP_USER_AGENT'], 'safari' ) !== false ) {
 			return "\n";
 		}
 		return ', ';
@@ -331,9 +335,9 @@ class WP_Calendar {
 		} elseif ( ! empty( $m ) ) {
 			$this->year = '' . intval( substr( $m, 0, 4 ) );
 			if ( strlen( $m ) < 6 ) {
-					$this->month = '01';
+				$this->month = '01';
 			} else {
-					$this->month = '' . zeroise( intval( substr( $m, 4, 2 ) ), 2);
+				$this->month = '' . zeroise( intval( substr( $m, 4, 2 ) ), 2 );
 			}
 		} else {
 			$this->year = gmdate( 'Y', current_time( 'timestamp' ) );

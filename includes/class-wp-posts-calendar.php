@@ -10,6 +10,10 @@
  */
 
 /**
+ * Specify data for published posts calendar, as per `get_calendar()`.
+ *
+ * @since 0.1.0
+ *
  * @package WP_Calendar_Core
  * @author  Gary Jones <gary@garyjones.co.uk>
  */
@@ -38,21 +42,25 @@ class WP_Posts_Calendar extends WP_Calendar {
 		global $wpdb;
 
 		// Get the next and previous month and year with at least one post
-		$this->args['previous'] = $wpdb->get_row( "SELECT MONTH(post_date) AS month, YEAR(post_date) AS year
+		$this->args['previous'] = $wpdb->get_row(
+			"SELECT MONTH(post_date) AS month, YEAR(post_date) AS year
 			FROM $wpdb->posts
 			WHERE post_date < '{$this->args['start_of_month']}'
 				AND post_type = 'post'
 				AND post_status = 'publish'
 			ORDER BY post_date DESC
-			LIMIT 1" );
+			LIMIT 1"
+		);
 
-		$this->args['next'] = $wpdb->get_row( "SELECT MONTH(post_date) AS month, YEAR(post_date) AS year
+		$this->args['next'] = $wpdb->get_row(
+			"SELECT MONTH(post_date) AS month, YEAR(post_date) AS year
 			FROM $wpdb->posts
 			WHERE post_date > '{$this->args['end_of_month']}'
 				AND post_type = 'post'
 				AND post_status = 'publish'
 			ORDER BY post_date ASC
-			LIMIT 1" );
+			LIMIT 1"
+		);
 	}
 
 	/**
@@ -64,12 +72,14 @@ class WP_Posts_Calendar extends WP_Calendar {
 	 */
 	protected function get_days_with_data() {
 		global $wpdb;
-		$days_with_posts = $wpdb->get_results( "SELECT DISTINCT DAYOFMONTH(post_date)
+		$days_with_posts = $wpdb->get_results(
+			"SELECT DISTINCT DAYOFMONTH(post_date)
 			FROM $wpdb->posts
 			WHERE post_date >= '{$this->args['start_of_month']}'
 				AND post_date <= '{$this->args['end_of_month']}'
 				AND post_type = 'post'
-				AND post_status = 'publish'", ARRAY_N);
+				AND post_status = 'publish'", ARRAY_N
+		);
 
 		// get_results() returns multi-dimensional array, so we just need the first field of each.
 		if ( $days_with_posts ) {
@@ -85,12 +95,14 @@ class WP_Posts_Calendar extends WP_Calendar {
 
 	protected function get_titles_for_days() {
 		global $wpdb;
-		$posts = $wpdb->get_results( "SELECT ID, post_title, DAYOFMONTH(post_date) as dom
+		$posts = $wpdb->get_results(
+			"SELECT ID, post_title, DAYOFMONTH(post_date) as dom
 			FROM $wpdb->posts
 			WHERE post_date >= '{$this->args['start_of_month']}'
 				AND post_date <= '{$this->args['end_of_month']}'
 				AND post_type = 'post'
-				AND post_status = 'publish'");
+				AND post_status = 'publish'"
+		);
 
 		if ( ! $posts ) {
 			return array();

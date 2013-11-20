@@ -106,5 +106,5 @@ Future versions will include further proof of concept examples to show re-usabil
 
 ## Credits
 
-Built by [Gary Jones](https://twitter.com/GaryJ)
+Built by [Gary Jones](https://twitter.com/GaryJ)  
 Copyright 2013 [Gamajo Tech](http://gamajo.com/)
