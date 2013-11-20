@@ -68,7 +68,7 @@ class WP_Calendar {
 	 * @since 0.1.0
 	 */
 	public function display() {
-		echo $this-build();
+		echo $this->build(); // xss ok
 	}
 
 	/**
