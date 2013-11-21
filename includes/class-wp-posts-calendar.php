@@ -10,49 +10,65 @@
  */
 
 /**
+ * Specify data for published posts calendar, as per `get_calendar()`.
+ *
+ * If loosely intepreted as an MVC, this class would be a specific Model.
+ *
+ * @since 0.1.0
+ *
  * @package WP_Calendar_Core
  * @author  Gary Jones <gary@garyjones.co.uk>
  */
 class WP_Posts_Calendar extends WP_Calendar {
 
+	/**
+	 * Populate properties.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @param array $args Calendar args.
+	 */
 	public function __construct( $args = array() ) {
 		parent::__construct( $args );
-		$this->set_caption();
+		$this->set_month_label();
 		$this->set_previous_next();
 	}
 
-	protected function set_caption() {
+	protected function set_month_label() {
 		global $wp_locale;
 		/* translators: Calendar caption: 1: month name, 2: 4-digit year */
 		$calendar_caption = _x( '%1$s %2$s', 'calendar caption' );
-		$this->args['caption'] = sprintf( $calendar_caption, $wp_locale->get_month( $this->month ), $this->year );
+		$this->data['month_label'] = sprintf( $calendar_caption, $wp_locale->get_month( $this->data['month'] ), $this->data['year'] );
 	}
 
 	/**
 	 * Set the previous and next link object, containing month and year properties.
 	 *
 	 * @since 0.1.0
-	 *
 	 */
 	protected function set_previous_next() {
 		global $wpdb;
 
 		// Get the next and previous month and year with at least one post
-		$this->args['previous'] = $wpdb->get_row( "SELECT MONTH(post_date) AS month, YEAR(post_date) AS year
+		$this->data['previous'] = $wpdb->get_row(
+			"SELECT MONTH(post_date) AS month, YEAR(post_date) AS year
 			FROM $wpdb->posts
-			WHERE post_date < '{$this->args['start_of_month']}'
+			WHERE post_date < '{$this->data['start_of_month']}'
 				AND post_type = 'post'
 				AND post_status = 'publish'
 			ORDER BY post_date DESC
-			LIMIT 1" );
+			LIMIT 1"
+		);
 
-		$this->args['next'] = $wpdb->get_row( "SELECT MONTH(post_date) AS month, YEAR(post_date) AS year
+		$this->data['next'] = $wpdb->get_row(
+			"SELECT MONTH(post_date) AS month, YEAR(post_date) AS year
 			FROM $wpdb->posts
-			WHERE post_date > '{$this->args['end_of_month']}'
+			WHERE post_date > '{$this->data['end_of_month']}'
 				AND post_type = 'post'
 				AND post_status = 'publish'
 			ORDER BY post_date ASC
-			LIMIT 1" );
+			LIMIT 1"
+		);
 	}
 
 	/**
@@ -62,14 +78,16 @@ class WP_Posts_Calendar extends WP_Calendar {
 	 *
 	 * @return array List of day numbers.
 	 */
-	protected function get_days_with_data() {
+	public function get_days_with_data() {
 		global $wpdb;
-		$days_with_posts = $wpdb->get_results( "SELECT DISTINCT DAYOFMONTH(post_date)
+		$days_with_posts = $wpdb->get_results(
+			"SELECT DISTINCT DAYOFMONTH(post_date)
 			FROM $wpdb->posts
-			WHERE post_date >= '{$this->args['start_of_month']}'
-				AND post_date <= '{$this->args['end_of_month']}'
+			WHERE post_date >= '{$this->data['start_of_month']}'
+				AND post_date <= '{$this->data['end_of_month']}'
 				AND post_type = 'post'
-				AND post_status = 'publish'", ARRAY_N);
+				AND post_status = 'publish'", ARRAY_N
+		);
 
 		// get_results() returns multi-dimensional array, so we just need the first field of each.
 		if ( $days_with_posts ) {
@@ -83,14 +101,16 @@ class WP_Posts_Calendar extends WP_Calendar {
 		return $days_with_data;
 	}
 
-	protected function get_titles_for_days() {
+	public function get_titles_for_days() {
 		global $wpdb;
-		$posts = $wpdb->get_results( "SELECT ID, post_title, DAYOFMONTH(post_date) as dom
+		$posts = $wpdb->get_results(
+			"SELECT ID, post_title, DAYOFMONTH(post_date) as dom
 			FROM $wpdb->posts
-			WHERE post_date >= '{$this->args['start_of_month']}'
-				AND post_date <= '{$this->args['end_of_month']}'
+			WHERE post_date >= '{$this->data['start_of_month']}'
+				AND post_date <= '{$this->data['end_of_month']}'
 				AND post_type = 'post'
-				AND post_status = 'publish'");
+				AND post_status = 'publish'"
+		);
 
 		if ( ! $posts ) {
 			return array();
@@ -109,5 +129,25 @@ class WP_Posts_Calendar extends WP_Calendar {
 		}
 
 		return $titles_for_days;
+	}
+
+	public function get_day_link( $day ) {
+		return get_day_link( $this->data['year'], $this->data['month'], $day );
+	}
+
+	/**
+	 * Return title attribute separator.
+	 *
+	 * Comma or new line, between pieces of data shown via the title attribute tooltip.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return string Title attribute seperator
+	 */
+	public function get_title_separator() {
+		if ( $this->supports_multiline_titles() ) {
+			return "\n";
+		}
+		return ', ';
 	}
 }
