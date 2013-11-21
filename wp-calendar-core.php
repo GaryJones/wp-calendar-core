@@ -31,6 +31,8 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 require_once plugin_dir_path( __FILE__ ) . 'includes/class-wp-calendar.php';
+require_once plugin_dir_path( __FILE__ ) . 'includes/class-wp-calendar-view.php';
+require_once plugin_dir_path( __FILE__ ) . 'includes/class-wp-calendar-view-grid.php';
 require_once plugin_dir_path( __FILE__ ) . 'includes/class-wp-posts-calendar.php';
 
 add_filter( 'get_calendar', 'wp_posts_calendar' );
@@ -39,11 +41,45 @@ add_filter( 'get_calendar', 'wp_posts_calendar' );
  *
  * This filter is only needed for this plugin - not for integration.
  *
+ * If loosely intepreted as an MVC, this function would be the Controller.
+ *
  * @since 0.1.0
  *
  * @return string Output for a posts calendar.
  */
 function wp_posts_calendar( $calendar_output ) {
+	// Create calendar as data only (Model in MVC)
 	$calendar = new WP_Posts_Calendar();
-	return $calendar_output . $calendar->build();
+
+	// Create a calendar view (View in MVC)
+	$calendar_view = new WP_Calendar_View_Grid( $calendar );
+
+	// Build the output
+	return $calendar_output . $calendar_view->build();
+}
+
+/**
+ * An example function for a different type and view of calendar, perhaps implemented in an events plugin.
+ *
+ * Attach to an action hook, or use within a theme via:
+ *
+ * ~~~
+ * if ( function_exists( 'prefix_show_events_lists' ) ) {
+ *     prefix_show_events_lists();
+ * }
+ * ~~~
+ */
+function prefix_show_events_list() {
+	// Args for getting the right data
+	$calendar_args = array(
+		'include_future_events' => 'true',
+	);
+	// Get the calender data
+	$events_data = new Prefix_Events_Calendar( $calendar_args );
+
+	// Build the calendar with the data
+	$events_calander = new Prefix_Events_Calendar_View_List( $events_data );
+
+	// Show the calendar
+	$events_calendar->display();
 }

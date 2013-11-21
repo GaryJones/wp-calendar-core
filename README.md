@@ -1,6 +1,6 @@
 # WP Calendar Core
 
-Designed to be a replacement for the monstrous get_calendar() with the intention to integrate with core when stable.
+Designed to be a replacement for the monstrous [`get_calendar()`](http://core.trac.wordpress.org/browser/tags/3.7.1/src/wp-includes/general-template.php#L1124) with the intention to integrate with core when stable.
 
 ## Description
 
@@ -8,7 +8,7 @@ While a similar name, this plugin bears no connection to [WP Calendar](http://wo
 
 ### Why create this plugin?
 
-I have an old plugin, [https://github.com/GaryJones/calendar-category/](Calendar Category), which aims to limit the posts shown in a typical calendar widget to just those from a certain category. To add in the limitations needed for this, I had to duplicate the whole of `get_category()` just to amend a few lines, and then go further to tell the widget to use my custom function for generating the calendar table.
+I have an old plugin, [Calendar Category](https://github.com/GaryJones/calendar-category/), which aims to limit the posts shown in a typical calendar widget to just those from a certain category. To add in the limitations needed for this, I had to duplicate the whole of `get_category()` just to amend a few lines, and then go further to tell the widget to use my custom function for generating the calendar grid. The duplicate function makes use of smaller functions that are specific to getting day and month links, and these too had to be duplicated and tweaked.
 
 I've wanted to see this code improved for a few years. While there are a few empty lines dating back ten years (Jan 2004), and a few more recent tweaks, the bulk of the `get_category()` function is around 8 years old.
 
@@ -16,30 +16,72 @@ I've wanted to see this code improved for a few years. While there are a few emp
 
 The goals of this feature-as-a-plugin are:
 
-* Break up `get_calendar()`, so that there's different code for creating _a_ calendar, and creating this specific calendar.
+* Break up `get_calendar()`, so that there's different code for creating _a_ calendar, and creating this specific published posts calendar.
 * Separate functions / methods for checking of cache, getting data (raw SQL), and displaying data(HTML), etc.
 * See if new date queries can be used instead of raw queries.
-* Allow event plugins to potentially re-use some functionality, but with different data.
-* Ensure creation of calendar markup is separate from widget, so it could also be used via a shortcode, etc.
+* Allow event or other plugins to re-use some functionality, but with different data and views.
 
 ### Approach
 
-I'd like to take a step back from this, and break down `get_category()`. There should be a base class (tentatively `WP_Calendar`) for displaying any data on a calendar, like `WP_List_Table` does for lists. This could be events (CPT), or dates when new users joined, ecommerce sales, or dashboard activity etc. Some of the method names would likely use the appropriate ones from `WP_Lists_Table` for consistency.
+I'd like to take a step back and break down `get_category()` into several classes. The following are all tentatively named.
 
-Secondly, a class (tentatively `WP_Posts_Calendar`) for displaying published posts on a calendar, that replaces the specific data-source implementation within `get_calendar()`. Ultimately, I see `get_calendar()` as being as simple as:
+#### `WP_Calendar`
+
+A base class for gathering calendar data. Sets up some time-based data values that will apply to any calendar. Contains a few generic methods that specific calendars might find useful.
+
+#### `WP_Posts_Calendar`
+
+An extension of `WP_Calendar`, it is one example of a calendar that gathers specific data - in this case, dates and titles of published posts (to match existing functionality). Other examples could be for events (CPT), revision history, dates when new users joined, ecommerce sales, or dashboard activity. If data has an associated date, it can have a calendar class which gathers that data. In an MVC system, this class would be considered to be most like a Model.
+
+The data is expected to be a multi-dimensional array. Numerical associative keys are for each day (themselves an array containing one or more pieces of data e.g. post titles), while non-numerical keys are for other pieces of data. The latter may have a few required keys, such as `monthly_label`, but otherwise these classes can include whatever data is known to be needed, given a limited number of views it will be used with. In reality, a custom calendar and custom view can communicate data however they want since the whole model object is injected as a dependency into the view object.
+
+My Category Calendar plugin, as an example, could extend this class and over-ride just the methods that collect the data to ensure only posts in a certain category are included, leaving the building up of the grid view essentially untouched.
+
+#### `WP_Calendar_View`
+
+A base class for calendar views, it contains minimal methods that act as the API for interacting with the presentation of calendars - set an argument, build the output and display that output.
+
+#### `WP_Calendar_View_Grid`
+
+A specific implementation of presenting calendar data, extended from `WP_Calendar_View`. Fictional sibling classes might be `WP_Calendar_View_List`, `WP_Calendar_View_Vcard` or `WP_Calendar_View_Xml`. It builds up the markup from the data provided - for instance, a label of "November 2013" might be shown as a `<caption>` in the grid (table) view, but as a heading in a list, a field in a vcard, or a title element or root element attribute in XML. In an MVC system, this class would be considered to be the view. It receives the model class in the constructor.
+
+
+With these classes in place, I see the 199-line `get_calendar()` function being rewritten as something like:
 
 ~~~php
 function get_calendar( $initial = true, $echo = true ) {
-	$calendar = new WP_Posts_Calendar( $initial );
+	$calendar = new WP_Posts_Calendar();
+
+	$calendar_view = new WP_Calendar_View_Grid( $calendar );
+	$calendar_view_>set_arg( 'initial', $initial );
+
 	if ( $echo ) {
-		$calendar->display();
+		$calendar_view->display();
 	} else {
-		return $calendar->build();
+		return $calendar_view->build();
 	}
 }
 ~~~
 
-The base calendar class could include both a table view and a list view, though this would be considered as a later feature.
+An example function for a different type and view of calendar, perhaps implemented in an events plugin:
+
+~~~php
+function prefix_show_events_list() {
+	// Args for getting the correct data
+	$calendar_args = array(
+		'include_future_events' => 'true',
+	);
+
+	// Get the calender data
+	$events_data = new Prefix_Events_Calendar( $calendar_args );
+
+	// Build the calendar with the data
+	$events_calander = new Prefix_Events_Calendar_View_List( $events_data );
+
+	// Show the calendar as a list
+	$events_calendar->display();
+}
+~~~
 
 ### Considerations
 
@@ -47,13 +89,14 @@ Markup for the calendar widget should stay the same, although extra classes migh
 
 Look at existing event plugins, and others which display a calendar of some sort, to see what features they would need to be able to make use of the new code.
 
+Decide whether a more formal OOP approach should be used e.g. registering data to individual days, instead of grabbing an array of all days with data and passing that through. The former could allow multiple types of data being added to the same calendar.
+
 ### Progress
 
 The plugin is at a working stage - by default it will add a second calendar to the `get_calendar()` output, so that comparison between the old code and new code output can be made.
 
 The following tasks are outstanding:
 
-* Move methods between classes, consider creating a separate table view class. It's currently a mess.
 * Consider how existing `id` attributes in HTML can be addressed, since multiple instances will cause invalid markup, but removing them might break theme styling.
 * Document code.
 * Add any filters (though most methods are small enough that sub-classes can over-ride them anyway).
