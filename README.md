@@ -83,6 +83,24 @@ function prefix_show_events_list() {
 }
 ~~~
 
+### Over-engeering?
+
+A valid point was raised to me, to avoid over-engineering this improvement. I've taken two examples within WordPress core to show how I don't think this plugin is over-engineered.
+
+#### 1. `WP_Lists_Table`
+
+If you look at the sub-classes of `WP_Lists_Table`, many of them contain methods of the same name, when over-riding the appearance of the displaying rows, for instance. `WP_Lists_Table` contains a basic implementation itself though as a sensible default. The `WP_Calendar_View_Grid` class in this plugin takes the same approach. Should `WP_List_Table` ever support showing as a grid or something other than a table, I would expect a base class of `WP_List` to be created, which matches up to a similar abstraction level as `WP_Calendar_View`.
+
+#### 2. `WP_Upgrader` + `WP_Upgrader_Skin`
+
+The code for handling upgrades is broadly split into two groups of classes - the bit that does the updating, and the bit that shows feedback from that.
+
+The first is handled by a base class of `WP_Upgrader` which is then extended into specific classes for plugins, themes, language packs and core, and this matches up to the abstraction level of `WP_Calendar` then `WP_Posts_Calendar` (and whatever ever other specific calendar data-collection classes other plugins or core might introduce).
+
+The second group is a base class of `WP_Upgrader_Skin`, then skins for plugin updates, theme updates, general bulk updating, bulk plugin updates, bulk theme updates, plugin installer, theme installer, language packs updater and core updater. This separation matches up to `WP_Calender_View` then `WP_Calendar_View_Grid` plus any further view classes that might be introduced by core or plugins.
+
+Beyond these examples, the implementation of communication between any new calendar and calendar view classes is left open - there's a couple of pre-set property names (and even these could be ignored since the whole model is passed to the view), but otherwise there's few limitations.
+
 ### Considerations
 
 Markup for the calendar widget should stay the same, although extra classes might be useful. Other plugins should be able to filter the default markup though.
