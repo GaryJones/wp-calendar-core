@@ -32,10 +32,6 @@ class WP_Calendar implements ArrayAccess {
 	 */
 	protected $args;
 
-	protected $month;
-	protected $year;
-
-
 	/**
 	 * Populate properties.
 	 *
