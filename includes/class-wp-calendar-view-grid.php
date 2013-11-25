@@ -53,12 +53,19 @@ class WP_Calendar_View_Grid extends WP_Calendar_View {
 	 * @return string Table markup for the complete month view of a calendar.
 	 */
 	public function build() {
-		return '<table class="wp-calendar">' .
+		if ( $output = $this->get_cache() ) {
+			return $output;
+		}
+
+		$output = '<table class="wp-calendar">' .
 			$this->build_caption() .
 			$this->build_head() .
 			$this->build_foot() .
 			$this->build_body() .
 			'</table>';
+
+		$this->set_cache( $output );
+		return $output;
 	}
 
 	protected function build_caption() {

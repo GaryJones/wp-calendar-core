@@ -35,10 +35,16 @@ class WP_Posts_Calendar extends WP_Calendar {
 	}
 
 	protected function set_month_label() {
+		if ( $month_label = $this->get_from_cache( 'month_label' ) ) {
+			$this->data['month_label'] = $month_label;
+			return;
+		}
+
 		global $wp_locale;
 		/* translators: Calendar caption: 1: month name, 2: 4-digit year */
 		$calendar_caption = _x( '%1$s %2$s', 'calendar caption' );
 		$this->data['month_label'] = sprintf( $calendar_caption, $wp_locale->get_month( $this->data['month'] ), $this->data['year'] );
+		$this->add_to_cache( 'month_label', $this->data['month_label'] );
 	}
 
 	/**
@@ -47,6 +53,13 @@ class WP_Posts_Calendar extends WP_Calendar {
 	 * @since 0.1.0
 	 */
 	protected function set_previous_next() {
+		// Check if it's already been cached
+		if ( $previous = $this->get_from_cache( 'previous' ) ) {
+			$this->data['previous'] = $previous;
+			$this->data['next']     = $this->get_from_cache( 'next' );
+			return;
+		}
+
 		global $wpdb;
 
 		// Get the next and previous month and year with at least one post
@@ -60,6 +73,8 @@ class WP_Posts_Calendar extends WP_Calendar {
 			LIMIT 1"
 		);
 
+		$this->add_to_cache( 'previous', $this->data['previous'] );
+
 		$this->data['next'] = $wpdb->get_row(
 			"SELECT MONTH(post_date) AS month, YEAR(post_date) AS year
 			FROM $wpdb->posts
@@ -69,6 +84,8 @@ class WP_Posts_Calendar extends WP_Calendar {
 			ORDER BY post_date ASC
 			LIMIT 1"
 		);
+
+		$this->add_to_cache( 'next', $this->data['next'] );
 	}
 
 	/**
@@ -79,7 +96,13 @@ class WP_Posts_Calendar extends WP_Calendar {
 	 * @return array List of day numbers.
 	 */
 	public function get_days_with_data() {
+		// Check if it's already been cached
+		if ( $days_with_data = $this->get_from_cache( 'days_with_data' ) ) {
+			return $days_with_data;
+		}
+
 		global $wpdb;
+
 		$days_with_posts = $wpdb->get_results(
 			"SELECT DISTINCT DAYOFMONTH(post_date)
 			FROM $wpdb->posts
@@ -98,10 +121,17 @@ class WP_Posts_Calendar extends WP_Calendar {
 			$days_with_data = array();
 		}
 
+		$this->add_to_cache( 'days_with_data', $days_with_data );
+
 		return $days_with_data;
 	}
 
 	public function get_titles_for_days() {
+		// Check if it's already been cached
+		if ( $titles_for_days = $this->get_from_cache( 'titles_for_days' ) ) {
+			return $titles_for_days;
+		}
+
 		global $wpdb;
 		$posts = $wpdb->get_results(
 			"SELECT ID, post_title, DAYOFMONTH(post_date) as dom
@@ -128,6 +158,7 @@ class WP_Posts_Calendar extends WP_Calendar {
 			}
 		}
 
+		$this->add_to_cache( 'titles_for_days', $titles_for_days );
 		return $titles_for_days;
 	}
 

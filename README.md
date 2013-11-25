@@ -118,7 +118,7 @@ The following tasks are outstanding:
 * Consider how existing `id` attributes in HTML can be addressed, since multiple instances will cause invalid markup, but removing them might break theme styling.
 * Document code.
 * Add any filters (though most methods are small enough that sub-classes can over-ride them anyway).
-* Reimplement caching for generated markup.
+* Optimize caching for all stages.
 * Create proof of concept examples that re-use the new calendar classes for other instances (not just published posts).
 
 ## Contributions

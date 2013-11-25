@@ -62,5 +62,27 @@ class WP_Calendar_View {
 		echo $this->build(); // xss ok
 	}
 
+	protected function cache_key() {
+		return get_class( $this ) . get_class( $this->calendar ) . $this->calendar['month'] . $this->calendar['year'];
+	}
+
+	protected function is_cached() {
+		return $this->get_cache();
+	}
+
+	protected function set_cache( $output ) {
+		$cache[ $this->cache_key() ] = $output;
+		wp_cache_set( 'wp_calendar_view', $cache, 'calendar' );
+	}
+
+	protected function get_cache() {
+		$key = $this->cache_key();
+		if ( $cache = wp_cache_get( 'wp_calendar_view', 'calendar' ) ) {
+			if ( is_array( $cache ) && isset( $cache[ $key ] ) ) {
+				return $cache[ $key ];
+			}
+		}
+	}
+
 
 }
