@@ -19,9 +19,9 @@
  * @package WP_Calendar_Core
  * @author  Gary Jones <gary@garyjones.co.uk>
  */
-class WP_Calendar {
+class WP_Calendar implements ArrayAccess {
 
-	public $data;
+	protected $data;
 
 	/**
 	 * Various information about the current calendar.
@@ -46,50 +46,7 @@ class WP_Calendar {
 	public function __construct( $args = array() ) {
 		$this->args = $args;
 
-		$this->set_month_year();
-	}
-
-	/**
-	 * Work out which month and year is being considered.
-	 *
-	 * @since 0.1.0
-	 */
-	protected function set_month_year() {
-		global $m, $monthnum, $year;
-
-		if ( isset( $_GET['w'] ) ) {
-			$w = '' . intval( $_GET['w'] );
-		}
-
-		// Let's figure out when we are
-		if ( ! empty( $monthnum ) && ! empty( $year ) ) {
-			$this->data['month'] = '' . zeroise( intval( $monthnum ), 2 );
-			$this->data['year']  = '' . intval( $year );
-		} elseif ( ! empty( $w ) ) {
-			// We need to get the month from MySQL
-			$this->data['year'] = '' . intval( substr( $m, 0, 4 ) );
-			$d = ( ( $w - 1 ) * 7 ) + 6; // It seems MySQL's weeks disagree with PHP's
-			$this->data['month'] = $wpdb->get_var( "SELECT DATE_FORMAT((DATE_ADD('{$this->data['year']}0101', INTERVAL $d DAY) ), '%m')" );
-		} elseif ( ! empty( $m ) ) {
-			$this->data['year'] = '' . intval( substr( $m, 0, 4 ) );
-			if ( strlen( $m ) < 6 ) {
-				$this->data['month'] = '01';
-			} else {
-				$this->data['month'] = '' . zeroise( intval( substr( $m, 4, 2 ) ), 2 );
-			}
-		} else {
-			$this->data['year'] = gmdate( 'Y', current_time( 'timestamp' ) );
-			$this->data['month'] = gmdate( 'm', current_time( 'timestamp' ) );
-		}
-
-		$unix_month = $this->data['unix_month']    = mktime( 0, 0, 0, $this->data['month'], 1, $this->data['year'] );
-		$last_day   = $this->data['days_in_month'] = intval( date( 't', $unix_month ) ); // 't' = number of days in the given month
-
-		$this->data['start_of_month'] = $this->data['year'] . '-' . $this->data['month'] . '-01 00:00:00';
-		$this->data['end_of_month']   = $this->data['year'] . '-' . $this->data['month'] . '-' . $last_day . ' 23:59:59';
-
-		// week_begins = 0 stands for Sunday
-		$this->data['week_begins'] = intval( get_option( 'start_of_week' ) );
+		$this->set_data();
 	}
 
 	/**
@@ -121,6 +78,26 @@ class WP_Calendar {
 		return calendar_week_mod( date( 'w', $this->data['unix_month'] ) - $this->data['week_begins'] );
 	}
 
+	public function offsetSet( $offset, $value ) {
+        if ( is_null( $offset ) ) {
+            $this->data[] = $value;
+        } else {
+            $this->data[ $offset ] = $value;
+        }
+    }
+
+    public function offsetExists( $offset ) {
+        return isset( $this->data[ $offset ] );
+    }
+
+    public function offsetUnset( $offset ) {
+        unset($this->data[ $offset ] );
+    }
+
+    public function offsetGet( $offset ) {
+        return isset( $this->data[ $offset ] ) ? $this->data[ $offset ] : null;
+    }
+
 	/**
 	 * Identify browsers from UA strings that can handle multiline title attributes.
 	 *
@@ -139,6 +116,85 @@ class WP_Calendar {
 			stripos( $_SERVER['HTTP_USER_AGENT'], 'safari' ) !== false;
 	}
 
+	/**
+	 * Work out which month and year is being considered.
+	 *
+	 * @since 0.1.0
+	 */
+	protected function set_data() {
+		global $m, $monthnum, $year;
+
+		if ( isset( $_GET['w'] ) ) {
+			$w = '' . intval( $_GET['w'] );
+		}
+
+		// Let's figure out when we are
+		if ( ! empty( $this->args['month'] ) && ! empty( $this->args['year'] ) ) {
+			$this->data['month'] = '' . zeroise( intval( $this->args['month'] ), 2 );
+			$this->data['year']  = '' . intval( $this->args['year'] );
+		} elseif ( ! empty( $monthnum ) && ! empty( $year ) ) {
+			$this->data['month'] = '' . zeroise( intval( $monthnum ), 2 );
+			$this->data['year']  = '' . intval( $year );
+		} elseif ( ! empty( $w ) ) {
+			// We need to get the month from MySQL
+			$d = ( ( $w - 1 ) * 7 ) + 6; // It seems MySQL's weeks disagree with PHP's
+			$this->data['month'] = $wpdb->get_var( "SELECT DATE_FORMAT((DATE_ADD('{$this->data['year']}0101', INTERVAL $d DAY) ), '%m')" );
+			$this->data['year']  = '' . intval( substr( $m, 0, 4 ) );
+		} elseif ( ! empty( $m ) ) {
+			if ( strlen( $m ) < 6 ) {
+				$this->data['month'] = '01';
+			} else {
+				$this->data['month'] = '' . zeroise( intval( substr( $m, 4, 2 ) ), 2 );
+			}
+			$this->data['year'] = '' . intval( substr( $m, 0, 4 ) );
+		} else {
+			$this->data['month'] = gmdate( 'm', current_time( 'timestamp' ) );
+			$this->data['year']  = gmdate( 'Y', current_time( 'timestamp' ) );
+		}
+
+		// Cache can't be checked for until the month and year are definitely known.
+		$key = $this->cache_key();
+		if ( $cache = wp_cache_get( 'wp_calendar', 'calendar' ) ) {
+			if ( is_array( $cache ) && isset( $cache[ $key ] ) ) {
+				$this->data = $cache[ $key ];
+				return;
+			}
+		}
+
+		$unix_month = $this->data['unix_month']    = mktime( 0, 0, 0, $this->data['month'], 1, $this->data['year'] );
+		$last_day   = $this->data['days_in_month'] = intval( date( 't', $unix_month ) ); // 't' = number of days in the given month
+
+		$this->data['start_of_month'] = $this->data['year'] . '-' . $this->data['month'] . '-01 00:00:00';
+		$this->data['end_of_month']   = $this->data['year'] . '-' . $this->data['month'] . '-' . $last_day . ' 23:59:59';
+
+		// week_begins = 0 stands for Sunday
+		$this->data['week_begins'] = intval( get_option( 'start_of_week' ) );
+
+		$cache[ $key ] = $this->data;
+		wp_cache_set( 'wp_calendar', $cache, 'calendar' );
+	}
+
+	protected function cache_key() {
+		return get_class( $this ) . $this->data['month'] . $this->data['year'];
+	}
+
+	protected function add_to_cache( $data_key, $value ) {
+		$cache = wp_cache_get( 'wp_calendar', 'calendar' );
+		$cache[ $this->cache_key() ][ $data_key ] = $value;
+		wp_cache_set( 'wp_calendar', $cache, 'calendar' );
+	}
+
+	protected function get_from_cache( $data_key ) {
+		$key = $this->cache_key();
+		if ( $cache = wp_cache_get( 'wp_calendar', 'calendar' ) ) {
+			if ( is_array( $cache ) && isset( $cache[ $key ] ) ) {
+				if ( is_array( $cache[ $key ] ) && isset( $cache[ $key ][ $data_key ] ) ) {
+					return $cache[ $key ][ $data_key ];
+				}
+			}
+		}
+	}
+
 	// public function add_data( $data, $day ) {
 	// 	// if $day already exists, add data to it
 	// 	$this->data[$day][] = $data;
@@ -148,9 +204,5 @@ class WP_Calendar {
 	// 	return $this->data;
 	// }
 
-	// protected function cache_key() {
-	// 	global $m, $monthnum, $year;
-	// 	return md5( __CLASS__ . $m . $monthnum . $year );
-	// }
 
 }

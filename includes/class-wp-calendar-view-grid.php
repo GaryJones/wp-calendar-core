@@ -69,17 +69,17 @@ class WP_Calendar_View_Grid extends WP_Calendar_View {
 	}
 
 	protected function build_caption() {
-		if ( ! isset( $this->calendar->data['month_label'] ) || ! $this->calendar->data['month_label'] ) {
+		if ( ! isset( $this->calendar['month_label'] ) || ! $this->calendar['month_label'] ) {
 			return '';
 		}
-		return '<caption>' . esc_html( $this->calendar->data['month_label'] ) . '</caption>';
+		return '<caption>' . esc_html( $this->calendar['month_label'] ) . '</caption>';
 	}
 
 	protected function build_head() {
 		global $wp_locale;
 
 		foreach ( range( 0, 6 ) as $week_day_number ) {
-			$week_day = $wp_locale->get_weekday( ( $week_day_number + $this->calendar->data['week_begins'] ) % 7 );
+			$week_day = $wp_locale->get_weekday( ( $week_day_number + $this->calendar['week_begins'] ) % 7 );
 			$th[] = $this->build_day_header( $week_day );
 		}
 
@@ -121,7 +121,7 @@ class WP_Calendar_View_Grid extends WP_Calendar_View {
 		global $wp_locale;
 
 		// If no value exists for the direction, return single-space table cell
-		if ( ! isset( $this->calendar->data[ $direction ] ) || ! $this->calendar->data[ $direction ] ) {
+		if ( ! isset( $this->calendar[ $direction ] ) || ! $this->calendar[ $direction ] ) {
 			if ( 'previous' === $direction ) {
 				return '<td colspan="3" id="prev" class="pad">&nbsp;</td>';
 			} else {
@@ -132,8 +132,8 @@ class WP_Calendar_View_Grid extends WP_Calendar_View {
 		// link title
 		$title = sprintf(
 			__( 'View posts for %1$s %2$s' ),
-			$wp_locale->get_month( $this->calendar->data[ $direction ]->month ),
-			date( 'Y', mktime( 0, 0 , 0, $this->calendar->data[ $direction ]->month, 1, $this->calendar->data[ $direction ]->year ) )
+			$wp_locale->get_month( $this->calendar[ $direction ]->month ),
+			date( 'Y', mktime( 0, 0 , 0, $this->calendar[ $direction ]->month, 1, $this->calendar[ $direction ]->year ) )
 		);
 
 		if ( 'previous' === $direction ) {
@@ -145,9 +145,9 @@ class WP_Calendar_View_Grid extends WP_Calendar_View {
 		// return table cell with link
 		return sprintf(
 			$pattern,
-			esc_url( $this->get_month_link( $this->calendar->data[ $direction ]->year, $this->calendar->data[ $direction ]->month ) ),
+			esc_url( $this->get_month_link( $this->calendar[ $direction ]->year, $this->calendar[ $direction ]->month ) ),
 			esc_attr( $title ),
-			$wp_locale->get_month_abbrev( $wp_locale->get_month( $this->calendar->data[ $direction ]->month ) )
+			$wp_locale->get_month_abbrev( $wp_locale->get_month( $this->calendar[ $direction ]->month ) )
 		);
 	}
 
@@ -167,7 +167,7 @@ class WP_Calendar_View_Grid extends WP_Calendar_View {
 
 	protected function build_dates() {
 		$markup = '';
-		for ( $day = 1; $day <= $this->calendar->data['days_in_month']; ++$day ) {
+		for ( $day = 1; $day <= $this->calendar['days_in_month']; ++$day ) {
 			if ( isset( $new_row ) && $new_row ) {
 				$markup .= "\n\t</tr>\n\t<tr>\n\t\t";
 			}
@@ -176,7 +176,7 @@ class WP_Calendar_View_Grid extends WP_Calendar_View {
 			$markup .= $this->build_single_date( $day );
 
 			// @todo Is this hard-coded 6 correct, for when the week starts on, say, day 3?
-			if ( 6 == calendar_week_mod( date( 'w', mktime( 0, 0, 0, $this->calendar->data['month'], $day, $this->calendar->data['year'] ) ) - $this->calendar->data['week_begins'] ) ) {
+			if ( 6 == calendar_week_mod( date( 'w', mktime( 0, 0, 0, $this->calendar['month'], $day, $this->calendar['year'] ) ) - $this->calendar['week_begins'] ) ) {
 				$new_row = true;
 			}
 		}
