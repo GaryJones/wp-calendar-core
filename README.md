@@ -1,4 +1,4 @@
-# WP Calendar Core
+# WP Calendar Core [![Build Status](https://secure.travis-ci.org/GaryJones/wp-calendar-core.png?branch=master)](http://travis-ci.org/GaryJones/wp-calendar-core) [![Coverage Status](https://coveralls.io/repos/GaryJones/wp-calendar-core/badge.png)](https://coveralls.io/r/GaryJones/wp-calendar-core)
 
 Designed to be a replacement for the monstrous [`get_calendar()`](http://core.trac.wordpress.org/browser/tags/3.7.1/src/wp-includes/general-template.php#L1124) with the intention to integrate with core when stable.
 
