@@ -109,6 +109,8 @@ Look at existing event plugins, and others which display a calendar of some sort
 
 Decide whether a more formal OOP approach should be used e.g. registering data to individual days, instead of grabbing an array of all days with data and passing that through. The former could allow multiple types of data being added to the same calendar.
 
+The naming of the classes has been considered. Different _types_ of calendar (data) are given before the word "calendar", and different views are given after. This allows combination of names to represent which calendar is being shown with which view e.g. `$wp_posts_calendar_grid`, `$wp_posts_calendar_list`, `$wp_activity_calendar_grid`, `$wp_upcomingevents_calendar_json`, etc.
+
 ### Progress
 
 The plugin is at a working stage - by default it will add a second calendar to the `get_calendar()` output, so that comparison between the old code and new code output can be made.
@@ -120,6 +122,16 @@ The following tasks are outstanding:
 * Add any filters (though most methods are small enough that sub-classes can over-ride them anyway).
 * Optimize caching for all stages.
 * Create proof of concept examples that re-use the new calendar classes for other instances (not just published posts).
+
+### Unit Tests
+
+Currently includes one unit test (asserting true is true) to show testing works. Needs proper unit tests.
+
+### Performance Benchmarks
+
+See the main plugin file for the attempt at benchmarking.
+
+When there is a single loop, the `WP_Posts_Calender + WP_Calender_View_Grid` solution takes approximately twice as long as `get_calendar()`, and when there are 10,000 loops, it's a 4~5x increase. Caching has been implemented, but perhaps not in the best way.
 
 ## Contributions
 
